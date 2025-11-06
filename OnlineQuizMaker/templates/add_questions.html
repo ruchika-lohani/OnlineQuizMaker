@@ -1,0 +1,46 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h4>Add Question to: {{ quiz.title }}</h4>
+                <form method="post">
+                    {% csrf_token %}
+                    {% for field in form %}
+                    <div class="mb-3">
+                        <label class="form-label">{{ field.label }}</label>
+                        {{ field }}
+                    </div>
+                    {% endfor %}
+                    <button type="submit" class="btn btn-primary">Add Question</button>
+                    <a href="{% url 'home' %}" class="btn btn-secondary">Finish</a>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body">
+                <h4>Current Questions ({{ questions.count }})</h4>
+                {% for question in questions %}
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <h6>{{ question.question_text }}</h6>
+                        <small>
+                            1. {{ question.option1 }}<br>
+                            2. {{ question.option2 }}<br>
+                            3. {{ question.option3 }}<br>
+                            4. {{ question.option4 }}<br>
+                            <strong>Correct: Option {{ question.correct_option }}</strong>
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

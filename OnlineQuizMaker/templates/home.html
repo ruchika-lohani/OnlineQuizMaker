@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="hero-section text-center text-white">
+    <h1 class="display-4 mb-4">Welcome to Online Quiz Maker! 🎯</h1>
+    <p class="lead mb-4">Create amazing quizzes and test your knowledge with our interactive platform</p>
+    
+    {% if not user.is_authenticated %}
+        <div class="mt-4">
+            <a href="{% url 'register' %}" class="btn btn-success btn-lg me-3">Get Started</a>
+            <a href="{% url 'login' %}" class="btn btn-outline-light btn-lg">Login</a>
+        </div>
+    {% else %}
+        <div class="mt-4">
+            <a href="{% url 'create_quiz' %}" class="btn btn-success btn-lg me-3">Create New Quiz</a>
+            <a href="{% url 'my_quizzes' %}" class="btn btn-primary btn-lg">My Quizzes</a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="row mt-5">
+    <div class="col-md-8 mx-auto">
+        <h3 class="text-white text-center mb-4">Available Quizzes</h3>
+        {% for quiz in quizzes %}
+        <div class="card mb-3">
+            <div class="card-body">
+                <h5 class="card-title">{{ quiz.title }}</h5>
+                <p class="card-text">{{ quiz.description }}</p>
+                <p class="text-muted">Created by: {{ quiz.created_by.username }}</p>
+                <a href="{% url 'take_quiz' quiz.id %}" class="btn btn-primary">Take Quiz</a>
+            </div>
+        </div>
+        {% empty %}
+        <div class="card">
+            <div class="card-body text-center">
+                <h5 class="text-muted">No quizzes available yet. Be the first to create one!</h5>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
