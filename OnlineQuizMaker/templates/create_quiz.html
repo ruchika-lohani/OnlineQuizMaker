@@ -8,12 +8,38 @@
                 <h3 class="card-title text-center mb-4">Create New Quiz</h3>
                 <form method="post">
                     {% csrf_token %}
-                    {% for field in form %}
+                    
+                    <!-- Basic Info -->
                     <div class="mb-3">
-                        <label class="form-label">{{ field.label }}</label>
-                        {{ field }}
+                        <label class="form-label">Quiz Title</label>
+                        {{ form.title }}
                     </div>
-                    {% endfor %}
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        {{ form.description }}
+                    </div>
+                    
+                    <!-- TIMER SETTINGS - ADD THIS SECTION -->
+                    <div class="card mb-3">
+                        <div class="card-header">
+                            <h5>Timer Settings</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-check mb-3">
+                                {{ form.has_time_limit }}
+                                <label class="form-check-label" for="{{ form.has_time_limit.id_for_label }}">
+                                    Enable Time Limit
+                                </label>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Time Limit (minutes)</label>
+                                {{ form.time_limit }}
+                                <div class="form-text">Set 0 for no time limit</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END TIMER SETTINGS -->
+                    
                     <button type="submit" class="btn btn-success w-100">Create Quiz & Add Questions</button>
                 </form>
             </div>

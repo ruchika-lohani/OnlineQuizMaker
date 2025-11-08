@@ -4,10 +4,12 @@ from .models import Quiz, Question
 class QuizForm(forms.ModelForm):
     class Meta:
         model = Quiz
-        fields = ['title', 'description']
+        fields = ['title', 'description', 'has_time_limit', 'time_limit']
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+             'time_limit': forms.NumberInput(attrs={'class': 'form-control'}),
+            'has_time_limit': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
         }
 
 class QuestionForm(forms.ModelForm):

@@ -1,6 +1,16 @@
 {% extends 'base.html' %}
 
 {% block content %}
+<!-- ADD THIS TIMER SECTION -->
+{% if quiz.has_time_limit %}
+<div class="card mb-4">
+    <div class="card-body text-center">
+        <h4>Time Remaining: <span id="timer">{{ quiz.time_limit }}:00</span></h4>
+    </div>
+</div>
+{% endif %}
+<!-- END TIMER -->
+
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
@@ -8,7 +18,7 @@
                 <h3 class="card-title text-center">{{ quiz.title }}</h3>
                 <p class="text-center">{{ quiz.description }}</p>
                 
-                <form method="post">
+                <form method="post" id="quizForm">
                     {% csrf_token %}
                     {% for question in questions %}
                     <div class="card mb-4">
@@ -52,4 +62,27 @@
         </div>
     </div>
 </div>
+
+<!-- ADD THIS SCRIPT AT THE BOTTOM -->
+<script>
+{% if quiz.has_time_limit %}
+let timeLeft = {{ quiz.time_limit }} * 60;
+const timer = document.getElementById('timer');
+const quizForm = document.getElementById('quizForm');
+
+function updateTimer() {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    timer.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (timeLeft <= 0) {
+        quizForm.submit();
+    }
+    timeLeft--;
+}
+
+setInterval(updateTimer, 1000);
+updateTimer();
+{% endif %}
+</script>
 {% endblock %}
