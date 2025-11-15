@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<!-- ADD THIS TIMER SECTION -->
+<!-- Timer Section -->
 {% if quiz.has_time_limit %}
 <div class="card mb-4">
     <div class="card-body text-center">
@@ -9,8 +9,35 @@
     </div>
 </div>
 {% endif %}
-<!-- END TIMER -->
 
+<!-- Progress Bar -->
+<div class="card mb-3">
+    <div class="card-body">
+        <h6>Progress: 0/{{ questions|length }}</h6>
+        <div class="progress">
+            <div class="progress-bar" id="progressBar" style="width: 0%">
+                0/{{ questions|length }}
+            </div>
+        </div>
+        <small class="text-muted">Answered: <span id="answeredCount">0</span>/{{ questions|length }}</small>
+    </div>
+</div>
+
+<!-- QUESTION NAVIGATION - ADD THIS HERE -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h6>Question Navigation</h6>
+        <div class="d-flex flex-wrap gap-2">
+            {% for question in questions %}
+            <a href="#question{{ forloop.counter }}" class="btn btn-sm btn-outline-primary">
+                {{ forloop.counter }}
+            </a>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Quiz Form & Questions -->
 <div class="row justify-content-center">
     <div class="col-md-8">
         <div class="card">
@@ -21,35 +48,20 @@
                 <form method="post" id="quizForm">
                     {% csrf_token %}
                     {% for question in questions %}
-                    <div class="card mb-4">
+                    <!-- Add id to each question card for navigation -->
+                    <div class="card mb-4" id="question{{ forloop.counter }}">
                         <div class="card-body">
                             <h5 class="card-title">Question {{ forloop.counter }}</h5>
                             <p>{{ question.question_text }}</p>
                             
+                            <!-- Your radio buttons here -->
                             <div class="form-check mb-2">
                                 <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="1" id="q{{ question.id }}_1">
                                 <label class="form-check-label" for="q{{ question.id }}_1">
                                     {{ question.option1 }}
                                 </label>
                             </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="2" id="q{{ question.id }}_2">
-                                <label class="form-check-label" for="q{{ question.id }}_2">
-                                    {{ question.option2 }}
-                                </label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="3" id="q{{ question.id }}_3">
-                                <label class="form-check-label" for="q{{ question.id }}_3">
-                                    {{ question.option3 }}
-                                </label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="question_{{ question.id }}" value="4" id="q{{ question.id }}_4">
-                                <label class="form-check-label" for="q{{ question.id }}_4">
-                                    {{ question.option4 }}
-                                </label>
-                            </div>
+                            <!-- ... rest of options ... -->
                         </div>
                     </div>
                     {% endfor %}
@@ -63,7 +75,7 @@
     </div>
 </div>
 
-<!-- ADD THIS SCRIPT AT THE BOTTOM -->
+<!-- Timer Script -->
 <script>
 {% if quiz.has_time_limit %}
 let timeLeft = {{ quiz.time_limit }} * 60;

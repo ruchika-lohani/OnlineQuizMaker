@@ -1,19 +1,29 @@
 from django.db import models
-
-# Create your models here.
-from django.db import models
 from django.contrib.auth.models import User
 
 class Quiz(models.Model):
+    DIFFICULTY_CHOICES = [
+        ('easy', 'Easy'),
+        ('medium', 'Medium'), 
+        ('hard', 'Hard'),
+    ]
+    
     title = models.CharField(max_length=200)
     description = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
-    time_limit = models.IntegerField(default=10, help_text="Time limit in minutes")  # ADD THIS
+    difficulty = models.CharField(
+        max_length=10,
+        choices=DIFFICULTY_CHOICES, 
+        default='easy'
+    )
+    number_of_questions = models.IntegerField(default=15)
+    time_limit = models.IntegerField(default=10, help_text="Time limit in minutes")
     has_time_limit = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     
     def __str__(self):
-        return self.title
+        return f"{self.title} ({self.difficulty})"
 
 class Question(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
@@ -23,6 +33,7 @@ class Question(models.Model):
     option3 = models.CharField(max_length=200)
     option4 = models.CharField(max_length=200)
     correct_option = models.IntegerField(choices=[(1, 'Option 1'), (2, 'Option 2'), (3, 'Option 3'), (4, 'Option 4')])
+    explanation = models.TextField(blank=True, null=True)  # Added explanation field
     
     def __str__(self):
         return self.question_text[:50]

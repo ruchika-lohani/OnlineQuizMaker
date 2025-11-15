@@ -1,0 +1,290 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h3 class="mb-0">🤖 AI Quiz Generator</h3>
+                <p class="mb-0">Generate custom quizzes instantly using artificial intelligence</p>
+            </div>
+            <div class="card-body">
+                <!-- Generator Form -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>Create Your Quiz</h5>
+                                <form id="aiQuizForm">
+                                    {% csrf_token %}
+                                    <div class="mb-3">
+                                        <label class="form-label">📚 Topic</label>
+                                        <input type="text" class="form-control" id="topic" 
+                                               placeholder="e.g., Python programming, World History, Machine Learning" required>
+                                        <div class="form-text">Be specific for better results!</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">🎯 Difficulty</label>
+                                        <select class="form-control" id="difficulty">
+                                            <option value="easy">🟢 Easy</option>
+                                            <option value="medium" selected>🟡 Medium</option>
+                                            <option value="hard">🔴 Hard</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label">❓ Number of Questions</label>
+                                        <select class="form-control" id="numQuestions">
+                                            <option value="3">3 Questions</option>
+                                            <option value="5" selected>5 Questions</option>
+                                            <option value="10">10 Questions</option>
+                                            <option value="15">15 Questions</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-success w-100" id="generateBtn">
+                                        🪄 Generate Quiz with AI
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- Examples Card -->
+                        <div class="card mt-4">
+                            <div class="card-body">
+                                <h6>💡 Example Topics</h6>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button class="btn btn-outline-primary btn-sm example-topic" data-topic="Python programming">
+                                        Python
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm example-topic" data-topic="World War II history">
+                                        WWII History
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm example-topic" data-topic="Machine Learning basics">
+                                        Machine Learning
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm example-topic" data-topic="Space exploration">
+                                        Space
+                                    </button>
+                                    <button class="btn btn-outline-primary btn-sm example-topic" data-topic="Renewable energy">
+                                        Renewable Energy
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Preview Section -->
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>✨ Generated Quiz Preview</h5>
+                                <div id="loadingSpinner" class="text-center py-5" style="display: none;">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-3">AI is generating your quiz... This may take a few seconds.</p>
+                                </div>
+                                
+                                <div id="quizPreview" style="display: none;">
+                                    <h4 id="quizTitle" class="text-primary"></h4>
+                                    <div id="questionsContainer" class="mt-3"></div>
+                                    
+                                    {% if user.is_authenticated %}
+                                    <button id="saveQuizBtn" class="btn btn-success w-100 mt-3">
+                                        💾 Save This Quiz
+                                    </button>
+                                    {% else %}
+                                    <div class="alert alert-warning mt-3">
+                                        <a href="{% url 'login' %}">Login</a> to save AI-generated quizzes!
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div id="emptyState" class="text-center py-5 text-muted">
+                                    <div style="font-size: 3rem;">🤖</div>
+                                    <h5>No Quiz Generated Yet</h5>
+                                    <p>Enter a topic and click "Generate" to create your first AI quiz!</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript for AI Quiz Generator -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('aiQuizForm');
+    const generateBtn = document.getElementById('generateBtn');
+    const loadingSpinner = document.getElementById('loadingSpinner');
+    const quizPreview = document.getElementById('quizPreview');
+    const emptyState = document.getElementById('emptyState');
+    const saveQuizBtn = document.getElementById('saveQuizBtn');
+    
+    let currentQuizData = null;
+    
+    // Example topic buttons
+    document.querySelectorAll('.example-topic').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('topic').value = this.dataset.topic;
+        });
+    });
+    
+    // Generate quiz
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const topic = document.getElementById('topic').value;
+        const difficulty = document.getElementById('difficulty').value;
+        const numQuestions = document.getElementById('numQuestions').value;
+        
+        if (!topic.trim()) {
+            alert('Please enter a topic');
+            return;
+        }
+        
+        // Show loading
+        generateBtn.disabled = true;
+        generateBtn.innerHTML = '🔄 Generating...';
+        loadingSpinner.style.display = 'block';
+        quizPreview.style.display = 'none';
+        emptyState.style.display = 'none';
+        
+        try {
+            const response = await fetch('/generate-ai-quiz/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({
+                    topic: topic,
+                    difficulty: difficulty,
+                    num_questions: parseInt(numQuestions)
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                currentQuizData = data.quiz;
+                displayQuizPreview(data.quiz);
+            } else {
+                throw new Error(data.error || 'Failed to generate quiz');
+            }
+            
+        } catch (error) {
+            console.error('Error:', error);
+            alert('Error generating quiz: ' + error.message);
+        } finally {
+            generateBtn.disabled = false;
+            generateBtn.innerHTML = '🪄 Generate Quiz with AI';
+            loadingSpinner.style.display = 'none';
+        }
+    });
+    
+    // Display generated quiz
+    function displayQuizPreview(quiz) {
+        document.getElementById('quizTitle').textContent = quiz.quiz_title;
+        const container = document.getElementById('questionsContainer');
+        container.innerHTML = '';
+        
+        quiz.questions.forEach((question, index) => {
+            const questionHtml = `
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6>Question ${index + 1}</h6>
+                        <p class="fw-bold">${question.question_text}</p>
+                        <div class="options">
+                            ${question.options.map((option, optIndex) => `
+                                <div class="form-check ${optIndex === question.correct_answer ? 'text-success' : ''}">
+                                    <input class="form-check-input" type="radio" disabled ${optIndex === question.correct_answer ? 'checked' : ''}>
+                                    <label class="form-check-label">
+                                        ${option}
+                                        ${optIndex === question.correct_answer ? ' ✅' : ''}
+                                    </label>
+                                </div>
+                            `).join('')}
+                        </div>
+                        ${question.explanation ? `
+                            <div class="alert alert-info mt-2">
+                                <small><strong>Explanation:</strong> ${question.explanation}</small>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            container.innerHTML += questionHtml;
+        });
+        
+        quizPreview.style.display = 'block';
+        emptyState.style.display = 'none';
+    }
+    
+    // Save quiz
+    if (saveQuizBtn) {
+        saveQuizBtn.addEventListener('click', async function() {
+            if (!currentQuizData) {
+                alert('No quiz to save');
+                return;
+            }
+            
+            saveQuizBtn.disabled = true;
+            saveQuizBtn.innerHTML = '💾 Saving...';
+            
+            try {
+                const response = await fetch('/save-ai-quiz/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                    },
+                    body: JSON.stringify({
+                        quiz: currentQuizData,
+                        topic: document.getElementById('topic').value,
+                        difficulty: document.getElementById('difficulty').value
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('Quiz saved successfully!');
+                    window.location.href = `/quiz/${data.quiz_id}/`;
+                } else {
+                    throw new Error(data.error);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Error saving quiz: ' + error.message);
+            } finally {
+                saveQuizBtn.disabled = false;
+                saveQuizBtn.innerHTML = '💾 Save This Quiz';
+            }
+        });
+    }
+});
+</script>
+
+<style>
+.example-topic {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+#quizPreview .card {
+    border-left: 4px solid #007bff;
+}
+
+#loadingSpinner {
+    background: rgba(255,255,255,0.9);
+    border-radius: 10px;
+}
+</style>
+{% endblock %}

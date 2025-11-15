@@ -1,29 +1,268 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="row justify-content-center">
+<div class="row">
     <div class="col-md-6">
         <div class="card">
             <div class="card-body text-center">
                 <h3 class="card-title">Quiz Completed! 🎉</h3>
-                <h4 class="mt-4">{{ quiz.title }}</h4>
+                <h4 class="mt-3 text-muted">{{ quiz.title }}</h4>
+                
+                <!-- Score Display -->
                 <div class="display-1 text-primary my-4">{{ score }}/{{ total }}</div>
-                <p class="lead">
+                
+                <!-- Performance Message -->
+                <div class="performance-message mb-3">
                     {% if score == total %}
-                        Perfect Score! Excellent! 🌟
-                    {% elif score >= total|add:"-2" %}
-                        Great Job! 👍
+                        <div class="alert alert-success">
+                            <h5>🎯 Perfect Score! Excellent! 🌟</h5>
+                            <p class="mb-0">You aced this quiz! Outstanding performance!</p>
+                        </div>
+                    {% elif score >= total|add:"-1" %}
+                        <div class="alert alert-info">
+                            <h5>👍 Great Job! Almost Perfect!</h5>
+                            <p class="mb-0">You're doing amazing! Just one step away from perfection.</p>
+                        </div>
+                    {% elif score >= total|add:"-3" %}
+                        <div class="alert alert-warning">
+                            <h5>💪 Good Effort!</h5>
+                            <p class="mb-0">Solid performance! Keep practicing to improve.</p>
+                        </div>
                     {% else %}
-                        Good effort! Keep practicing! 💪
+                        <div class="alert alert-secondary">
+                            <h5>📚 Keep Learning!</h5>
+                            <p class="mb-0">Don't give up! Review the material and try again.</p>
+                        </div>
                     {% endif %}
-                </p>
-                <div class="mt-4">
-                    <a href="{% url 'home' %}" class="btn btn-primary">Back to Home</a>
-                    <a href="{% url 'take_quiz' quiz.id %}" class="btn btn-success">Retry Quiz</a>
+                </div>
+
+                <!-- Statistics -->
+                <div class="stats-grid mt-4">
+                    <div class="row text-center">
+                        <div class="col-6 mb-3">
+                            <div class="stat-item">
+                                <div class="stat-number text-success">{{ score }}</div>
+                                <small>Correct</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="stat-item">
+                                <div class="stat-number text-danger">{{ total|add:"-score" }}</div>
+                                <small>Incorrect</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="stat-item">
+                                <div class="stat-number text-info">{% widthratio score total 100 %}%</div>
+                                <small>Accuracy</small>
+                            </div>
+                        </div>
+                        <div class="col-6 mb-3">
+                            <div class="stat-item">
+                                <div class="stat-number text-warning">{{ total }}</div>
+                                <small>Total Questions</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Performance Analysis Section -->
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">📊 Performance Analysis</h5>
+                
+                <!-- Progress Bar Visualization -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between mb-2">
+                        <small>Correct Answers: {{ score }}</small>
+                        <small>Incorrect: {{ total|add:"-score" }}</small>
+                    </div>
+                    <div class="progress mb-3" style="height: 25px;">
+                        <div class="progress-bar bg-success" 
+                             style="width: {% widthratio score total 100 %}%">
+                            {% widthratio score total 100 %}%
+                        </div>
+                        <div class="progress-bar bg-danger" 
+                             style="width: {% widthratio total|add:"-score" total 100 %}%">
+                            {% widthratio total|add:"-score" total 100 %}%
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Performance Rating -->
+                <div class="performance-rating text-center mb-4">
+                    <h6>Performance Level:</h6>
+                    <div class="stars">
+                        {% with stars=score|floatformat:0 %}
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= stars|add:"0" %}
+                                    ⭐
+                                {% else %}
+                                    ☆
+                                {% endif %}
+                            {% endfor %}
+                        {% endwith %}
+                    </div>
+                </div>
+
+                <!-- Quick Stats -->
+                <div class="quick-stats">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <div class="stat-number">{{ score }}</div>
+                                <small>Score</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <div class="stat-number">{{ total }}</div>
+                                <small>Total</small>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="stat-box">
+                                <div class="stat-number">{% widthratio score total 100 %}%</div>
+                                <small>Percentage</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons Card -->
+        <div class="card">
+            <div class="card-body text-center">
+                <h6>What would you like to do next?</h6>
+                <div class="action-buttons">
+                    <a href="{% url 'home' %}" class="btn btn-primary btn-lg w-100 mb-2">
+                        🏠 Back to Home
+                    </a>
+                    <a href="{% url 'take_quiz' quiz.id %}" class="btn btn-success btn-lg w-100 mb-2">
+                        🔄 Retry This Quiz
+                    </a>
+                    <button onclick="shareResults()" class="btn btn-info btn-lg w-100 mb-2">
+                        📤 Share Results
+                    </button>
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'my_quizzes' %}" class="btn btn-outline-primary btn-lg w-100">
+                        📚 My Quizzes
+                    </a>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
 
+<!-- Share Results Script -->
+<script>
+function shareResults() {
+    const score = {{ score }};
+    const total = {{ total }};
+    const percentage = Math.round((score/total) * 100);
+    const quizTitle = "{{ quiz.title }}";
+    const text = `🎯 I scored ${score}/${total} (${percentage}%) on "${quizTitle}" quiz! Try it yourself!`;
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'My Quiz Results',
+            text: text,
+            url: window.location.href
+        });
+    } else {
+        // Fallback for browsers that don't support Web Share API
+        navigator.clipboard.writeText(text).then(function() {
+            alert('Results copied to clipboard! 📋\n\n' + text);
+        }, function() {
+            alert('Share this result:\n\n' + text);
+        });
+    }
+}
+
+// Add confetti effect for excellent scores
+{% if score == total %}
+setTimeout(() => {
+    // Simple confetti effect
+    const confetti = document.createElement('div');
+    confetti.innerHTML = '🎉🎊🌟';
+    confetti.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 3rem;
+        z-index: 9999;
+        pointer-events: none;
+        animation: fadeOut 2s forwards;
+    `;
+    document.body.appendChild(confetti);
+    
+    setTimeout(() => {
+        confetti.remove();
+    }, 2000);
+}, 1000);
+{% endif %}
+</script>
+
+<style>
+.stat-item {
+    padding: 10px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.1);
+}
+
+.stat-number {
+    font-size: 1.8rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-box {
+    padding: 10px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+}
+
+.stars {
+    font-size: 1.5rem;
+    margin: 10px 0;
+}
+
+.performance-message .alert {
+    border-radius: 15px;
+    border: none;
+}
+
+.action-buttons .btn {
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.action-buttons .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.progress-bar {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+</style>
+{% endblock %}

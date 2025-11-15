@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <div class="mb-3">
+                    <div class="bg-primary rounded-circle d-inline-flex align-items-center justify-content-center" 
+                         style="width: 80px; height: 80px; font-size: 2rem;">
+                        {{ user.username|first|upper }}
+                    </div>
+                </div>
+                <h4>{{ user.username }}</h4>
+                <p class="text-muted">Member since {{ user.date_joined|date:"M Y" }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5>Quiz Statistics</h5>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="display-6 text-primary">{{ total_quizzes_taken }}</div>
+                        <small>Quizzes Taken</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="display-6 text-success">{{ average_score|floatformat:1 }}</div>
+                        <small>Average Score</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="display-6 text-info">{{ total_quizzes_created }}</div>
+                        <small>Quizzes Created</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5>Recent Activity</h5>
+                {% for attempt in recent_attempts %}
+                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                    <div>
+                        <strong>{{ attempt.quiz.title }}</strong>
+                        <br>
+                        <small class="text-muted">{{ attempt.attempted_at|date:"M d, Y H:i" }}</small>
+                    </div>
+                    <span class="badge bg-{% if attempt.score >= attempt.quiz.questions.count|add:"-2" %}success{% else %}warning{% endif %}">
+                        {{ attempt.score }}/{{ attempt.quiz.questions.count }}
+                    </span>
+                </div>
+                {% empty %}
+                <p class="text-muted">No quiz attempts yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
