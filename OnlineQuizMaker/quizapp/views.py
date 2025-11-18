@@ -1,27 +1,23 @@
-import json
-from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from django.db.models import Avg, Count
+from django.http import JsonResponse
+import json
 from .models import Quiz, Question, QuizAttempt
 from .forms import QuizForm, QuestionForm
-from .ai_quiz_generator import AIQuizGenerator
-
-# Initialize AI generator
-ai_generator = AIQuizGenerator()
+from .ai_quiz_generator import ai_generator
 
 def home(request):
-    # Get quizzes with actual question counts
-    quizzes = Quiz.objects.annotate(question_count=Count('question')).filter(question_count__gt=0)
-    
+    quizzes = Quiz.objects.all()
+    # Enhanced statistics
     total_quizzes = Quiz.objects.count()
     total_questions = Question.objects.count()
     total_attempts = QuizAttempt.objects.count()
     total_users = User.objects.count()
-    active_quizzes = quizzes.count()
+    active_quizzes = Quiz.objects.filter(question__isnull=False).distinct().count()
     
     return render(request, 'home.html', {
         'quizzes': quizzes,
@@ -82,8 +78,6 @@ def add_questions(request, quiz_id):
             return redirect('add_questions', quiz_id=quiz.id)
     else:
         form = QuestionForm()
-    
-    # Get actual questions count
     questions = Question.objects.filter(quiz=quiz)
     return render(request, 'add_questions.html', {
         'form': form, 
@@ -91,23 +85,9 @@ def add_questions(request, quiz_id):
         'questions': questions
     })
 
-@login_required
-def delete_quiz(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
-    if request.method == 'POST':
-        quiz.delete()
-        return redirect('my_quizzes')
-    return redirect('my_quizzes')
-
 def take_quiz(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
     questions = Question.objects.filter(quiz=quiz)
-    
-    # Don't allow taking empty quizzes
-    if questions.count() == 0:
-        return render(request, 'error.html', {
-            'message': 'This quiz has no questions yet!'
-        })
     
     if request.method == 'POST':
         score = 0
@@ -133,14 +113,25 @@ def take_quiz(request, quiz_id):
 
 @login_required
 def my_quizzes(request):
-    quizzes = Quiz.objects.filter(created_by=request.user).annotate(question_count=Count('question'))
+    quizzes = Quiz.objects.filter(created_by=request.user)
     return render(request, 'my_quizzes.html', {'quizzes': quizzes})
 
 @login_required
+def delete_quiz(request, quiz_id):
+    """Delete a quiz"""
+    quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
+    if request.method == 'POST':
+        quiz.delete()
+        return redirect('my_quizzes')
+    return render(request, 'confirm_delete.html', {'quiz': quiz})
+
+@login_required
 def profile(request):
+    # Calculate user statistics
     total_quizzes_taken = QuizAttempt.objects.filter(user=request.user).count()
     total_quizzes_created = Quiz.objects.filter(created_by=request.user).count()
     
+    # Calculate average score
     attempts = QuizAttempt.objects.filter(user=request.user)
     if attempts.exists():
         average_score = attempts.aggregate(Avg('score'))['score__avg']
@@ -158,17 +149,21 @@ def profile(request):
 
 def leaderboard(request, quiz_id=None):
     if quiz_id:
+        # Quiz-specific leaderboard
         quiz = get_object_or_404(Quiz, id=quiz_id)
         attempts = QuizAttempt.objects.filter(quiz=quiz).order_by('-score')[:10]
         return render(request, 'quiz_leaderboard.html', {'quiz': quiz, 'attempts': attempts})
     else:
+        # Global leaderboard
         leaders = User.objects.annotate(
             avg_score=Avg('quizattempt__score'),
             quiz_count=Count('quizattempt')
         ).filter(quiz_count__gt=0).order_by('-avg_score')[:20]
         return render(request, 'global_leaderboard.html', {'leaders': leaders})
-    
+
+# AI QUIZ GENERATOR FUNCTIONS
 def ai_quiz_generator_page(request):
+    """Render AI quiz generator page"""
     return render(request, 'ai_quiz_generator.html')
 
 def generate_ai_quiz(request):
@@ -180,24 +175,32 @@ def generate_ai_quiz(request):
             difficulty = data.get('difficulty', 'medium')
             num_questions = int(data.get('num_questions', 5))
             
+            print(f"🎯 VIEWS: Request received - {num_questions} questions about '{topic}'")
+            
             if not topic:
                 return JsonResponse({'error': 'Topic is required'}, status=400)
-            
-            if num_questions < 1 or num_questions > 20:
-                return JsonResponse({'error': 'Number of questions must be between 1 and 20'}, status=400)
             
             # Generate quiz using AI
             ai_quiz = ai_generator.generate_quiz(topic, difficulty, num_questions)
             
+            # Double-check we have the right number of questions
+            actual_questions = len(ai_quiz.get('questions', []))
+            print(f"✅ VIEWS: Sending {actual_questions} questions to frontend")
+            
             return JsonResponse({
                 'success': True,
-                'quiz': ai_quiz
+                'quiz': ai_quiz,
+                'generated_questions': actual_questions,
+                'requested_questions': num_questions
             })
             
         except Exception as e:
+            print(f"❌ VIEWS: Error: {e}")
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'Only POST requests allowed'}, status=405)
+
+@login_required
 
 def save_ai_quiz(request):
     """Save AI-generated quiz to database"""
@@ -208,40 +211,17 @@ def save_ai_quiz(request):
             topic = data.get('topic', 'general knowledge')
             difficulty = data.get('difficulty', 'medium')
             
-            if not quiz_data or 'questions' not in quiz_data:
-                return JsonResponse({'error': 'Invalid quiz data'}, status=400)
-            
-            questions = quiz_data['questions']
-            if len(questions) == 0:
-                return JsonResponse({'error': 'No questions generated'}, status=400)
-            
-            # Validate each question has exactly 4 options
-            for i, q_data in enumerate(questions):
-                options = q_data.get('options', [])
-                if len(options) != 4:
-                    return JsonResponse({
-                        'error': f'Question {i+1} must have exactly 4 options, but got {len(options)}'
-                    }, status=400)
-                
-                # Validate correct answer is within range
-                correct_answer = q_data.get('correct_answer')
-                if correct_answer not in [1, 2, 3, 4]:
-                    return JsonResponse({
-                        'error': f'Question {i+1} has invalid correct answer: {correct_answer}'
-                    }, status=400)
-            
             # Create quiz
             quiz = Quiz(
                 title=quiz_data['quiz_title'],
                 description=f"AI-generated quiz about {topic}",
                 difficulty=difficulty,
-                number_of_questions=len(questions),
                 created_by=request.user
             )
             quiz.save()
             
             # Create questions
-            for q_data in questions:
+            for q_data in quiz_data['questions']:
                 question = Question(
                     quiz=quiz,
                     question_text=q_data['question_text'],
@@ -249,7 +229,7 @@ def save_ai_quiz(request):
                     option2=q_data['options'][1],
                     option3=q_data['options'][2],
                     option4=q_data['options'][3],
-                    correct_option=q_data['correct_answer'],  # Already 1-based
+                    correct_option=q_data['correct_answer'] + 1,  # Convert to 1-based
                     explanation=q_data.get('explanation', '')
                 )
                 question.save()
@@ -257,40 +237,10 @@ def save_ai_quiz(request):
             return JsonResponse({
                 'success': True,
                 'quiz_id': quiz.id,
-                'message': f'Quiz saved successfully with {len(questions)} questions!'
+                'message': 'Quiz saved successfully!'
             })
             
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'Authentication required'}, status=401)
-
-@login_required
-
-
-@login_required
-def delete_quiz(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
-    if request.method == 'POST':
-        quiz_title = quiz.title
-        quiz.delete()
-        messages.success(request, f'Quiz "{quiz_title}" has been deleted successfully!')
-        return redirect('my_quizzes')
-    return redirect('my_quizzes')
-
-def delete_question(request, question_id):
-    """Delete a specific question"""
-    question = get_object_or_404(Question, id=question_id, quiz__created_by=request.user)
-    quiz_id = question.quiz.id
-    question.delete()
-    return redirect('add_questions', quiz_id=quiz_id)
-
-def quiz_detail(request, quiz_id):
-    """View quiz details"""
-    quiz = get_object_or_404(Quiz, id=quiz_id)
-    questions = Question.objects.filter(quiz=quiz)
-    
-    return render(request, 'quiz_detail.html', {
-        'quiz': quiz,
-        'questions': questions
-    })

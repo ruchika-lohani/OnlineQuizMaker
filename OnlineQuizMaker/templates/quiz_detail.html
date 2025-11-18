@@ -62,7 +62,7 @@
     <div class="navigation-actions">
         <a href="{% url 'my_quizzes' %}" class="btn btn-secondary">Back to My Quizzes</a>
         {% if questions.count > 0 %}
-        <a href="{% url 'take_quiz' quiz.id %}" class="btn btn-success">Take This Quiz</a>
+        <a href="{% url 'take_quiz' quiz.id %}" class="btn btn-primary">Take Quiz</a>
         {% endif %}
     </div>
 </div>

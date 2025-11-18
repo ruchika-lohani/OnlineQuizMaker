@@ -28,7 +28,7 @@
                                         <label class="form-label">🎯 Difficulty</label>
                                         <select class="form-control" id="difficulty">
                                             <option value="easy">🟢 Easy</option>
-                                            <option value="medium" selected>🟡 Medium</option>
+                                            <option value="medium">🟡 Medium</option>
                                             <option value="hard">🔴 Hard</option>
                                         </select>
                                     </div>
@@ -37,7 +37,7 @@
                                         <label class="form-label">❓ Number of Questions</label>
                                         <select class="form-control" id="numQuestions">
                                             <option value="3">3 Questions</option>
-                                            <option value="5" selected>5 Questions</option>
+                                            <option value="5">5 Questions</option>
                                             <option value="10">10 Questions</option>
                                             <option value="15">15 Questions</option>
                                         </select>
@@ -135,13 +135,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
     
-    // Generate quiz
+    // Generate quiz - FIXED VERSION
     form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
         const topic = document.getElementById('topic').value;
         const difficulty = document.getElementById('difficulty').value;
-        const numQuestions = document.getElementById('numQuestions').value;
+        const numQuestionsSelect = document.getElementById('numQuestions');
+        const numQuestions = parseInt(numQuestionsSelect.value);
+        
+        console.log(`🎯 Generating ${numQuestions} questions about ${topic}`);
         
         if (!topic.trim()) {
             alert('Please enter a topic');
@@ -165,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 body: JSON.stringify({
                     topic: topic,
                     difficulty: difficulty,
-                    num_questions: parseInt(numQuestions)
+                    num_questions: numQuestions
                 })
             });
             
@@ -173,6 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (data.success) {
                 currentQuizData = data.quiz;
+                console.log(`✅ Generated ${data.generated_questions} questions (requested: ${data.requested_questions})`);
                 displayQuizPreview(data.quiz);
             } else {
                 throw new Error(data.error || 'Failed to generate quiz');
@@ -247,7 +251,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     body: JSON.stringify({
                         quiz: currentQuizData,
                         topic: document.getElementById('topic').value,
-                        difficulty: document.getElementById('difficulty').value
+                        difficulty: document.getElementById('difficulty').value,
+                        num_questions: parseInt(document.getElementById('numQuestions').value)
                     })
                 });
                 
