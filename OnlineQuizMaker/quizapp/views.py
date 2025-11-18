@@ -3,7 +3,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Sum
 from django.http import JsonResponse
 import json
 from .models import Quiz, Question, QuizAttempt
@@ -120,10 +120,8 @@ def my_quizzes(request):
 def delete_quiz(request, quiz_id):
     """Delete a quiz"""
     quiz = get_object_or_404(Quiz, id=quiz_id, created_by=request.user)
-    if request.method == 'POST':
-        quiz.delete()
-        return redirect('my_quizzes')
-    return render(request, 'confirm_delete.html', {'quiz': quiz})
+    quiz.delete()
+    return redirect('my_quizzes')
 
 @login_required
 def profile(request):
@@ -151,14 +149,18 @@ def leaderboard(request, quiz_id=None):
     if quiz_id:
         # Quiz-specific leaderboard
         quiz = get_object_or_404(Quiz, id=quiz_id)
-        attempts = QuizAttempt.objects.filter(quiz=quiz).order_by('-score')[:10]
+        attempts = QuizAttempt.objects.filter(quiz=quiz).order_by('-score', 'attempted_at')[:10]
         return render(request, 'quiz_leaderboard.html', {'quiz': quiz, 'attempts': attempts})
     else:
-        # Global leaderboard
+        # Global leaderboard - users with best average scores
+        from django.db.models import Avg, Count, Sum
+        
         leaders = User.objects.annotate(
+            quiz_count=Count('quizattempt'),
             avg_score=Avg('quizattempt__score'),
-            quiz_count=Count('quizattempt')
-        ).filter(quiz_count__gt=0).order_by('-avg_score')[:20]
+            total_score=Sum('quizattempt__score')
+        ).filter(quiz_count__gt=0).order_by('-avg_score', '-quiz_count')[:20]
+        
         return render(request, 'global_leaderboard.html', {'leaders': leaders})
 
 # AI QUIZ GENERATOR FUNCTIONS
@@ -199,8 +201,6 @@ def generate_ai_quiz(request):
             return JsonResponse({'error': str(e)}, status=500)
     
     return JsonResponse({'error': 'Only POST requests allowed'}, status=405)
-
-@login_required
 
 def save_ai_quiz(request):
     """Save AI-generated quiz to database"""

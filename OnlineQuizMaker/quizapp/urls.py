@@ -17,7 +17,7 @@ urlpatterns = [
     path('ai-quiz-generator/', views.ai_quiz_generator_page, name='ai_quiz_generator'),
     path('generate-ai-quiz/', views.generate_ai_quiz, name='generate_ai_quiz'),
     path('save-ai-quiz/', views.save_ai_quiz, name='save_ai_quiz'),
-    
+    path('delete-quiz/<int:quiz_id>/', views.delete_quiz, name='delete_quiz'),
     # Remove or comment out these lines if they exist:
     # path('delete-quiz/<int:quiz_id>/', views.delete_quiz, name='delete_quiz'),
     # path('delete-question/<int:question_id>/', views.delete_question, name='delete_question'),

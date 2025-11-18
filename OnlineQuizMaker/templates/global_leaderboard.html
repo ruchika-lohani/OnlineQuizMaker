@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">🏆 Global Leaderboard</h4>
+            </div>
+            <div class="card-body">
+                {% if leaders %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>User</th>
+                                <th>Quizzes Taken</th>
+                                <th>Average Score</th>
+                                <th>Total Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for leader in leaders %}
+                            <tr class="{% if leader.user == user %}table-info{% endif %}">
+                                <td>
+                                    {% if forloop.counter == 1 %}🥇
+                                    {% elif forloop.counter == 2 %}🥈
+                                    {% elif forloop.counter == 3 %}🥉
+                                    {% else %}#{{ forloop.counter }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ leader.user.username }}</strong>
+                                    {% if leader.user == user %}<span class="badge bg-primary ms-2">You</span>{% endif %}
+                                </td>
+                                <td>{{ leader.quiz_count }}</td>
+                                <td>
+                                    <span class="badge bg-{% if leader.avg_score >= 8 %}success{% elif leader.avg_score >= 5 %}warning{% else %}danger{% endif %}">
+                                        {{ leader.avg_score|floatformat:1 }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <strong>{{ leader.total_score }}</strong>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <h5 class="text-muted">No quiz attempts yet</h5>
+                    <p class="text-muted">Be the first to take a quiz and appear on the leaderboard!</p>
+                    <a href="{% url 'home' %}" class="btn btn-primary">Take a Quiz</a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

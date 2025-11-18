@@ -79,6 +79,7 @@
                 <a class="nav-link" href="{% url 'my_quizzes' %}">My Quizzes</a>
                 <a class="nav-link" href="{% url 'profile' %}">Profile</a>
                 <a class="nav-link" href="{% url 'logout' %}">Logout ({{ user.username }})</a>
+                <a class="nav-link" href="{% url 'leaderboard' %}">🏆 Leaderboard</a>
             {% else %}
                 <a class="nav-link" href="{% url 'login' %}">Login</a>
                 <a class="nav-link" href="{% url 'register' %}">Register</a>
