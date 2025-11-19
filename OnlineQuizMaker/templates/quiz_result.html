@@ -69,12 +69,6 @@
         </div>
     </div>
     
-    <div class="text-center mt-4">
-    <a href="{% url 'leaderboard' %}" class="btn btn-warning">
-        🏆 View Global Leaderboard
-    </a>
-</div>
-
     <!-- Performance Analysis Section -->
     <div class="col-md-6">
         <div class="card mb-4">
@@ -152,9 +146,22 @@
                     <a href="{% url 'take_quiz' quiz.id %}" class="btn btn-success btn-lg w-100 mb-2">
                         🔄 Retry This Quiz
                     </a>
+                    
+                    <!-- CERTIFICATE DOWNLOAD BUTTON -->
+                    {% if user.is_authenticated %}
+                    <a href="{% url 'export_certificate' quiz.id %}" class="btn btn-warning btn-lg w-100 mb-2">
+                        📜 Download Certificate
+                    </a>
+                    {% else %}
+                    <div class="alert alert-warning mb-2">
+                        <a href="{% url 'login' %}">Login</a> to download your certificate!
+                    </div>
+                    {% endif %}
+                    
                     <button onclick="shareResults()" class="btn btn-info btn-lg w-100 mb-2">
                         📤 Share Results
                     </button>
+                    
                     {% if user.is_authenticated %}
                     <a href="{% url 'my_quizzes' %}" class="btn btn-outline-primary btn-lg w-100">
                         📚 My Quizzes
@@ -173,7 +180,7 @@ function shareResults() {
     const total = {{ total }};
     const percentage = Math.round((score/total) * 100);
     const quizTitle = "{{ quiz.title }}";
-    const text = `🎯 I scored ${score}/${total} (${percentage}%) on "${quizTitle}" quiz! Try it yourself!`;
+    const text = 🎯 I scored ${score}/${total} (${percentage}%) on "${quizTitle}" quiz! Try it yourself!;
     
     if (navigator.share) {
         navigator.share({
@@ -257,6 +264,13 @@ setTimeout(() => {
 .action-buttons .btn:hover {
     transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.action-buttons .btn-warning {
+    background: linear-gradient(45deg, #ffd700, #ffa500);
+    border: none;
+    color: black;
+    font-weight: bold;
 }
 
 @keyframes fadeOut {

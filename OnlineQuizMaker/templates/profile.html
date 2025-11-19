@@ -42,17 +42,23 @@
             <div class="card-body">
                 <h5>Recent Activity</h5>
                 {% for attempt in recent_attempts %}
-                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                    <div>
-                        <strong>{{ attempt.quiz.title }}</strong>
-                        <br>
-                        <small class="text-muted">{{ attempt.attempted_at|date:"M d, Y H:i" }}</small>
-                    </div>
-                    <span class="badge bg-{% if attempt.score >= attempt.quiz.questions.count|add:"-2" %}success{% else %}warning{% endif %}">
-                        {{ attempt.score }}/{{ attempt.quiz.questions.count }}
-                    </span>
-                </div>
-                {% empty %}
+<div class="d-flex justify-content-between align-items-center border-bottom py-2">
+    <div>
+        <strong>{{ attempt.quiz.title }}</strong>
+        <br>
+        <small class="text-muted">{{ attempt.attempted_at|date:"M d, Y H:i" }}</small>
+    </div>
+    <div>
+        <span class="badge bg-{% if attempt.score >= attempt.quiz.question_set.count|add:"-2" %}success{% else %}warning{% endif %} me-2">
+            {{ attempt.score }}/{{ attempt.quiz.question_set.count }}
+        </span>
+        <a href="{% url 'export_certificate' attempt.quiz.id %}" class="btn btn-sm btn-outline-success" 
+           title="Download Certificate">
+            📜
+        </a>
+    </div>
+</div>
+{% endfor %}
                 <p class="text-muted">No quiz attempts yet.</p>
                 {% endfor %}
             </div>
